@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PIXEL DRIFT // 2049 - Cyberpunk Endless Runner</title>
+  <style>
+    /* ==========================================================================
+       BLADE RUNNER NEON PURPLE AESTHETICS & LAYOUT
+       ========================================================================== */
+    :root {
+      --bg-dark: #080314;
+      --neon-purple: #b026ff;
+      --neon-purple-glow: rgba(176, 38, 255, 0.65);
+      --neon-magenta: #ff007f;
+      --neon-cyan: #00f3ff;
+      --neon-amber: #ffaa00;
+      --cyber-black: #04010a;
+      --grid-line: rgba(176, 38, 255, 0.25);
+      --text-muted: #8874a6;
+      --font-pixel: "Courier New", Courier, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 30%, #1f0b38 0%, #0a0314 70%, #030007 100%);
+      color: #fff;
+      font-family: var(--font-pixel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Outer Cabinet / Arcade Screen Wrapper */
+    .arcade-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 16 / 9;
+      max-height: 96vh;
+      margin: auto;
+      border: 3px solid var(--neon-purple);
+      border-radius: 8px;
+      background: var(--cyber-black);
+      box-shadow: 
+        0 0 25px var(--neon-purple-glow),
+        inset 0 0 40px rgba(176, 38, 255, 0.35);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Blade Runner Top Telemetry Bar */
+    .cyber-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: rgba(12, 4, 24, 0.9);
+      border-bottom: 2px solid rgba(176, 38, 255, 0.4);
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      z-index: 10;
+    }
+
+    .cyber-title {
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cyber-title .logo-highlight {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .cyber-title .logo-purple {
+      color: var(--neon-purple);
+      text-shadow: 0 0 10px var(--neon-purple);
+    }
+
+    .telemetry-tag {
+      color: var(--text-muted);
+      font-size: 10px;
+      display: flex;
+      gap: 15px;
+    }
+
+    .telemetry-item span {
+      color: var(--neon-amber);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .cyber-btn {
+      background: rgba(25, 8, 48, 0.8);
+      border: 1px solid var(--neon-purple);
+      color: #fff;
+      padding: 4px 10px;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 6px rgba(176, 38, 255, 0.4);
+    }
+
+    .cyber-btn:hover {
+      background: var(--neon-purple);
+      color: #fff;
+      box-shadow: 0 0 15px var(--neon-purple);
+    }
+
+    /* Screen Container for Canvas & CRT overlays */
+    .screen-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    /* Game Canvas */
+    canvas#gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* CRT Scanline & Glitch Overlay */
+    .crt-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.28) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 3px, 6px 100%;
+      opacity: 0.85;
+      z-index: 5;
+    }
+
+    .crt-vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.85);
+      z-index: 6;
+    }
+
+    /* In-Game HUD Elements (Blade Runner Diagnostics) */
+    .in-game-hud {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 8;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .hud-box {
+      background: rgba(8, 2, 18, 0.75);
+      border-left: 3px solid var(--neon-purple);
+      padding: 6px 14px;
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    }
+
+    .hud-label {
+      color: var(--text-muted);
+      font-size: 10px;
+      margin-bottom: 2px;
+      display: block;
+    }
+
+    .hud-val {
+      color: #fff;
+      font-weight: 900;
+      font-size: 18px;
+      text-shadow: 0 0 8px var(--neon-purple);
+    }
+
+    .hud-val.cyan {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .hud-val.amber {
+      color: var(--neon-amber);
+      text-shadow: 0 0 8px var(--neon-amber);
+    }
+
+    /* Cyberpunk UI Overlays: Start Screen & Game Over */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 1, 10, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 20;
+      text-align: center;
+      padding: 20px;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+      opacity: 0;
+    }
+
+    .glitch-title {
+      font-size: 38px;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      position: relative;
+      text-shadow: 
+        2px 2px var(--neon-magenta),
+        -2px -2px var(--neon-cyan),
+        0 0 20px var(--neon-purple);
+      margin-bottom: 8px;
+      animation: neonPulse 2s infinite alternate;
+    }
+
+    @keyframes neonPulse {
+      0% { text-shadow: 2px 2px var(--neon-magenta), -2px -2px var(--neon-cyan), 0 0 15px var(--neon-purple); }
+      100% { text-shadow: 2px 2px var(--neon-magenta), -2px -2px var(--neon-cyan), 0 0 30px var(--neon-purple), 0 0 45px var(--neon-magenta); }
+    }
+
+    .sub-glitch {
+      font-size: 13px;
+      color: var(--neon-cyan);
+      letter-spacing: 3px;
+      margin-bottom: 24px;
+      text-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .stats-card {
+      background: rgba(20, 8, 38, 0.85);
+      border: 1px solid var(--neon-purple);
+      border-radius: 6px;
+      padding: 18px 30px;
+      margin-bottom: 25px;
+      width: 80%;
+      max-width: 380px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      box-shadow: 0 0 20px rgba(176, 38, 255, 0.3);
+    }
+
+    .stats-card .stat-box {
+      text-align: center;
+    }
+
+    .stats-card .stat-title {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .stats-card .stat-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .stat-number.gold {
+      color: var(--neon-amber);
+      text-shadow: 0 0 10px var(--neon-amber);
+    }
+
+    .action-btn {
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-magenta));
+      color: #ffffff;
+      border: none;
+      padding: 12px 32px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 0 20px var(--neon-purple-glow);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 30px var(--neon-purple), 0 0 15px #fff;
+    }
+
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+
+    .prompt-hint {
+      margin-top: 15px;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .prompt-hint kbd {
+      background: rgba(255,255,255,0.15);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    /* Mobile Controls Bar for touch users */
+    .mobile-controls {
+      display: none;
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      z-index: 15;
+    }
+
+    .touch-jump-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(176, 38, 255, 0.35);
+      border: 2px solid var(--neon-purple);
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 0 15px var(--neon-purple-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .mobile-controls {
+        display: block;
+      }
+    }
+
+    /* Bottom Info & Hotkey Instructions Footer */
+    .cyber-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 16px;
+      background: rgba(8, 2, 16, 0.95);
+      border-top: 1px solid rgba(176, 38, 255, 0.3);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      z-index: 10;
+    }
+
+    .cyber-footer span {
+      color: var(--neon-cyan);
+    }
+
+    /* Small screens responsiveness */
+    @media (max-width: 600px) {
+      .arcade-wrapper {
+        border-radius: 0;
+        border: none;
+        max-height: 100vh;
+        height: 100%;
+        aspect-ratio: auto;
+      }
+      .cyber-header {
+        font-size: 10px;
+        padding: 6px 10px;
+      }
+      .telemetry-tag {
+        display: none;
+      }
+      .glitch-title {
+        font-size: 26px;
+      }
+      .stats-card {
+        padding: 12px 16px;
+        gap: 10px;
+      }
+      .in-game-hud {
+        top: 8px;
+        left: 10px;
+        right: 10px;
+      }
+      .hud-val {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Retro Arcade Frame -->
+  <main class="arcade-wrapper" role="main">
+    
+    <!-- Top Cyber Telemetry Header -->
+    <header class="cyber-header">
+      <div class="cyber-title">
+        <span class="logo-purple">◆ PIXEL DRIFT</span>
+        <span class="logo-highlight">// 2049</span>
+      </div>
+      <div class="telemetry-tag">
+        <div class="telemetry-item">LOC: <span>SECTOR-09</span></div>
+        <div class="telemetry-item">STATUS: <span id="statusIndicator">ONLINE</span></div>
+      </div>
+      <div class="header-actions">
+        <button id="soundToggleBtn" class="cyber-btn" title="Toggle Synthesizer Audio">🔊 SFX ON</button>
+      </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <div class="screen-container" id="screenContainer">
+      <!-- CRT & Scanline Simulation Filters -->
+      <div class="crt-overlay"></div>
+      <div class="crt-vignette"></div>
+
+      <!-- In-Game HUD -->
+      <div class="in-game-hud">
+        <div class="hud-box">
+          <span class="hud-label">DISTANCE / SCORE</span>
+          <div class="hud-val cyan" id="scoreDisplay">00000</div>
+        </div>
+        <div class="hud-box">
+          <span class="hud-label">BEST RECORD</span>
+          <div class="hud-val amber" id="bestScoreDisplay">00000</div>
+        </div>
+        <div class="hud-box" style="border-left-color: var(--neon-cyan);">
+          <span class="hud-label">VELOCITY</span>
+          <div class="hud-val" id="speedDisplay">240 KM/H</div>
+        </div>
+      </div>
+
+      <!-- Canvas Render Surface (800x450 Internal Retro Resolution) -->
+      <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+      <!-- Mobile Touch Controls -->
+      <div class="mobile-controls">
+        <button id="touchJumpBtn" class="touch-jump-btn" aria-label="Jump">JUMP</button>
+      </div>
+
+      <!-- START MENU OVERLAY -->
+      <div class="modal-overlay" id="startModal">
+        <h1 class="glitch-title">PIXEL DRIFT</h1>
+        <p class="sub-glitch">LOS ANGELES // 2049 TYRELL DISTRICT</p>
+        
+        <div class="stats-card">
+          <div class="stat-box">
+            <div class="stat-title">PERSONAL BEST</div>
+            <div class="stat-number gold" id="startBestScore">00000</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">TARGET SECTOR</div>
+            <div class="stat-number" style="color: var(--neon-cyan);">ZONE 01</div>
+          </div>
+        </div>
+
+        <button id="startBtn" class="action-btn">
+          <span>INITIALIZE ENGINE</span> ▶
+        </button>
+        <p class="prompt-hint">Press <kbd>SPACE</kbd>, <kbd>W</kbd>, <kbd>↑</kbd> or <kbd>CLICK / TAP</kbd> to Jump</p>
+      </div>
+
+      <!-- GAME OVER OVERLAY -->
+      <div class="modal-overlay hidden" id="gameOverModal">
+        <h2 class="glitch-title" style="color: #ff3366;">CRITICAL FAILURE</h2>
+        <p class="sub-glitch" id="gameOverSubtitle">CARRIER DRONE INTERCEPTED</p>
+
+        <div class="stats-card">
+          <div class="stat-box">
+            <div class="stat-title">DISTANCE LOGGED</div>
+            <div class="stat-number cyan" id="finalScoreDisplay">00000</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">BEST DRIFT</div>
+            <div class="stat-number gold" id="finalBestDisplay">00000</div>
+          </div>
+        </div>
+
+        <button id="restartBtn" class="action-btn">
+          <span>REBOOT SYSTEM</span> ↻
+        </button>
+        <p class="prompt-hint">Press <kbd>SPACE</kbd> or <kbd>TAP</kbd> to reboot</p>
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Cyber Credits -->
+    <footer class="cyber-footer">
+      <div>KEYS: <span>[SPACE / W / UP / TAP]</span> JUMP / AIR-DRIFT</div>
+      <div>SYNTH: <span>WEB AUDIO 8-BIT</span></div>
+    </footer>
+  </main>
+
+  <!-- ==========================================================================
+       VANILLA JAVASCRIPT GAME ENGINE
+       ========================================================================== -->
+  <script>
+    /**
+     * PIXEL DRIFT 2049
+     * Clean, beginner-friendly vanilla JS game loop with retro physics, 
+     * procedural obstacles, synthesized sound effects, and local storage scores.
+     */
+
+    // -------------------------------------------------------------
+    // 1. SOUND SYNTHESIZER (Pure Web Audio API - Zero External Files)
+    // -------------------------------------------------------------
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playJump() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          // Upward pitch bend (arcade jump feel)
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(420, now + 0.15);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.16);
+        } catch (e) {
+          // Graceful fallback if audio is blocked
+        }
+      }
+
+      playScore() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(580, now);
+          osc.frequency.setValueAtTime(880, now + 0.08);
+
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } catch (e) {}
+      }
+
+      playCrash() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          // Noise buffer for retro explosion crash
+          const bufferSize = this.ctx.sampleRate * 0.3;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(900, now);
+          filter.frequency.linearRampToValueAtTime(120, now + 0.3);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          noise.start(now);
+          noise.stop(now + 0.3);
+        } catch (e) {}
+      }
+    }
+
+    const audio = new SoundEngine();
+
+    // -------------------------------------------------------------
+    // 2. GAME CONSTANTS & STATE
+    // -------------------------------------------------------------
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Retro Virtual Dimensions
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 450;
+    const GROUND_Y = 370;
+
+    let gameState = 'START'; // 'START' | 'PLAYING' | 'GAMEOVER'
+    let score = 0;
+    let bestScore = parseInt(localStorage.getItem('pixel_drift_best') || '0', 10);
+    let speed = 6.0;
+    const INITIAL_SPEED = 6.0;
+    const MAX_SPEED = 14.5;
+    let distanceCount = 0;
+
+    // UI Elements
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const startModal = document.getElementById('startModal');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const startBestScore = document.getElementById('startBestScore');
+    const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+    const finalBestDisplay = document.getElementById('finalBestDisplay');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const touchJumpBtn = document.getElementById('touchJumpBtn');
+    const statusIndicator = document.getElementById('statusIndicator');
+
+    // Format helper for retro zero-padded HUD scores
+    function padScore(n) {
+      return String(Math.floor(n)).padStart(5, '0');
+    }
+
+    // Refresh display
+    bestScoreDisplay.textContent = padScore(bestScore);
+    startBestScore.textContent = padScore(bestScore);
+
+    // -------------------------------------------------------------
+    // 3. BACKGROUND & ATMOSPHERE (Parallax Cityscape + Neon Rain)
+    // -------------------------------------------------------------
+    // Parallax Skyline Buildings
+    const cityBuildings = [];
+    for (let x = 0; x < CANVAS_WIDTH + 150; x += 35 + Math.random() * 40) {
+      cityBuildings.push({
+        x: x,
+        width: 30 + Math.random() * 50,
+        height: 120 + Math.random() * 180,
+        color: Math.random() > 0.4 ? '#14072b' : '#0e041d',
+        hasSign: Math.random() > 0.5,
+        signColor: Math.random() > 0.5 ? '#b026ff' : '#00f3ff',
+        signText: ['2049', 'DRIFT', '電脳', 'TYRELL', 'OFF-WORLD', 'CYBER'][Math.floor(Math.random() * 6)]
+      });
+    }
+
+    // Neon Rain Streaks
+    const rainDrops = [];
+    const RAIN_COUNT = 55;
+    for (let i = 0; i < RAIN_COUNT; i++) {
+      rainDrops.push({
+        x: Math.random() * CANVAS_WIDTH,
+        y: Math.random() * CANVAS_HEIGHT,
+        len: 12 + Math.random() * 16,
+        speed: 12 + Math.random() * 8,
+        color: Math.random() > 0.3 ? 'rgba(176, 38, 255, 0.45)' : 'rgba(0, 243, 255, 0.4)'
+      });
+    }
+
+    // Perspective Grid Offset
+    let gridOffset = 0;
+
+    // -------------------------------------------------------------
+    // 4. PARTICLES (Thruster Flames, Sparks, Explosions)
+    // -------------------------------------------------------------
+    const particles = [];
+
+    function addParticle(x, y, vx, vy, color, size, life) {
+      particles.push({ x, y, vx, vy, color, size, life, maxLife: life });
+    }
+
+    function createThrusterFlame(x, y) {
+      const colors = ['#00f3ff', '#b026ff', '#ffffff'];
+      const col = colors[Math.floor(Math.random() * colors.length)];
+      addParticle(
+        x, 
+        y + (Math.random() * 6 - 3), 
+        -(3 + Math.random() * 4), 
+        (Math.random() * 2 - 1), 
+        col, 
+        3 + Math.random() * 3, 
+        14
+      );
+    }
+
+    function createSparks(x, y, count = 12, color = '#ff007f') {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const pSpeed = 2 + Math.random() * 5;
+        addParticle(
+          x, 
+          y, 
+          Math.cos(angle) * pSpeed, 
+          Math.sin(angle) * pSpeed, 
+          color, 
+          2 + Math.random() * 3, 
+          25 + Math.random() * 15
+        );
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 5. PLAYER (The Cyber Hover-Spinner / Runner)
+    // -------------------------------------------------------------
+    const player = {
+      x: 90,
+      y: GROUND_Y - 32,
+      width: 50,
+      height: 28,
+      vy: 0,
+      gravity: 0.85,
+      jumpForce: -13.5,
+      isGrounded: true,
+      hoverTimer: 0,
+      jumpCount: 0,
+      maxJumps: 2, // Double jump allowed for awesome drift hops!
+
+      jump() {
+        if (this.jumpCount < this.maxJumps) {
+          this.vy = this.jumpForce;
+          this.jumpCount++;
+          this.isGrounded = false;
+          audio.playJump();
+          // Thruster burst
+          for (let i = 0; i < 8; i++) {
+            createThrusterFlame(this.x + 4, this.y + this.height - 4);
+          }
+        }
+      },
+
+      reset() {
+        this.y = GROUND_Y - this.height;
+        this.vy = 0;
+        this.jumpCount = 0;
+        this.isGrounded = true;
+      },
+
+      update() {
+        this.hoverTimer += 0.08;
+
+        // Apply Gravity
+        this.vy += this.gravity;
+        this.y += this.vy;
+
+        // Ground Floor Collision
+        const hoverBob = this.isGrounded ? Math.sin(this.hoverTimer * 2) * 2 : 0;
+        const targetFloor = GROUND_Y - this.height;
+
+        if (this.y >= targetFloor) {
+          this.y = targetFloor;
+          this.vy = 0;
+          this.isGrounded = true;
+          this.jumpCount = 0;
+        }
+
+        // Spawn continuous thruster particles
+        if (Math.random() > 0.3) {
+          createThrusterFlame(this.x + 2, this.y + this.height - 10);
+        }
+      },
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Ground Shadow / Neon Underglow
+        const shadowDist = (GROUND_Y - (this.y + this.height));
+        const shadowAlpha = Math.max(0.1, 0.6 - shadowDist / 120);
+        ctx.fillStyle = `rgba(176, 38, 255, ${shadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(25, this.height + shadowDist + 4, 28, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pixel-Art Cyber Hover Car (Blade Runner 2049 Spinner Style)
+        // 1. Vehicle Body (Aerodynamic dark chassis)
+        ctx.fillStyle = '#1c0e35';
+        ctx.fillRect(8, 10, 36, 12);
+        ctx.fillStyle = '#2c1652';
+        ctx.fillRect(14, 4, 24, 8); // Cabin roof
+
+        // 2. Glowing Neon Purple Side Strips & Trim
+        ctx.fillStyle = '#b026ff';
+        ctx.fillRect(4, 18, 44, 4);
+        ctx.fillRect(18, 2, 16, 2);
+
+        // 3. Cockpit Neon Glass (Cyan/White)
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(26, 6, 10, 6);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(30, 7, 4, 3); // Glint
+
+        // 4. Rear Engine Thruster (Glowing Magenta / White Core)
+        ctx.fillStyle = '#ff007f';
+        ctx.fillRect(2, 12, 6, 8);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 14, 3, 4);
+
+        // 5. Front Headlight Laser (Piercing Cyan Beam)
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(44, 14, 6, 4);
+
+        // Subtle headlight projection beam
+        const beamGrad = ctx.createLinearGradient(50, 16, 130, 16);
+        beamGrad.addColorStop(0, 'rgba(0, 243, 255, 0.35)');
+        beamGrad.addColorStop(1, 'rgba(0, 243, 255, 0)');
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(50, 14);
+        ctx.lineTo(130, 8);
+        ctx.lineTo(130, 24);
+        ctx.lineTo(50, 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      }
+    };
+
+    // -------------------------------------------------------------
+    // 6. OBSTACLES & PROCEDURAL GENERATION
+    // -------------------------------------------------------------
+    const obstacles = [];
+    let obstacleTimer = 0;
+    let nextObstacleDistance = 80;
+
+    class Obstacle {
+      constructor(type, x) {
+        this.type = type; // 'BARRIER' | 'DRONE' | 'SPIKE_PYLON'
+        this.x = x;
+        this.passed = false;
+
+        if (this.type === 'BARRIER') {
+          this.width = 28;
+          this.height = 42;
+          this.y = GROUND_Y - this.height;
+          this.color = '#ff007f';
+        } else if (this.type === 'SPIKE_PYLON') {
+          this.width = 24;
+          this.height = 54;
+          this.y = GROUND_Y - this.height;
+          this.color = '#b026ff';
+        } else if (this.type === 'DRONE') {
+          this.width = 34;
+          this.height = 24;
+          // Mid-air drone obstacle (requires sliding under or hopping over)
+          this.y = GROUND_Y - 68;
+          this.color = '#00f3ff';
+          this.bobTimer = Math.random() * 5;
+        }
+      }
+
+      update(currentSpeed) {
+        this.x -= currentSpeed;
+        if (this.type === 'DRONE') {
+          this.bobTimer += 0.08;
+          this.y += Math.sin(this.bobTimer) * 0.7;
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        if (this.type === 'BARRIER') {
+          // Cyber Police Barricade
+          ctx.fillStyle = '#220822';
+          ctx.fillRect(0, 0, this.width, this.height);
+          
+          // Neon Warning Stripes
+          ctx.fillStyle = '#ff007f';
+          ctx.fillRect(3, 4, this.width - 6, 6);
+          ctx.fillRect(3, 16, this.width - 6, 6);
+          ctx.fillRect(3, 28, this.width - 6, 6);
+
+          // Top Flashing Beacon
+          ctx.fillStyle = (Math.floor(Date.now() / 150) % 2 === 0) ? '#ff007f' : '#ffffff';
+          ctx.fillRect(this.width / 2 - 4, -6, 8, 6);
+
+        } else if (this.type === 'SPIKE_PYLON') {
+          // High-Voltage EMP Pylon
+          ctx.fillStyle = '#17062e';
+          ctx.fillRect(4, 0, this.width - 8, this.height);
+
+          // Glowing Purple Coils
+          ctx.fillStyle = '#b026ff';
+          for (let y = 8; y < this.height - 4; y += 12) {
+            ctx.fillRect(1, y, this.width - 2, 4);
+          }
+
+          // Top Energy Crystal
+          ctx.fillStyle = '#00f3ff';
+          ctx.beginPath();
+          ctx.moveTo(this.width / 2, -10);
+          ctx.lineTo(this.width - 2, 2);
+          ctx.lineTo(2, 2);
+          ctx.closePath();
+          ctx.fill();
+
+        } else if (this.type === 'DRONE') {
+          // Tyrell Surveillance Hunter Drone
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(4, 4, this.width - 8, this.height - 8);
+
+          // Wings & Thrusters
+          ctx.fillStyle = '#00f3ff';
+          ctx.fillRect(0, 8, 4, 8);
+          ctx.fillRect(this.width - 4, 8, 4, 8);
+
+          // Scanning Red/Cyan Eye
+          ctx.fillStyle = '#ff0055';
+          ctx.fillRect(12, 8, 10, 6);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(14, 9, 3, 3);
+
+          // Search Cone Downward
+          ctx.fillStyle = 'rgba(0, 243, 255, 0.15)';
+          ctx.beginPath();
+          ctx.moveTo(this.width / 2, this.height);
+          ctx.lineTo(this.width / 2 - 20, this.height + 45);
+          ctx.lineTo(this.width / 2 + 20, this.height + 45);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // Hitbox helper with slight forgiveness for responsive retro gameplay
+      getBounds() {
+        const padding = 5;
+        return {
+          left: this.x + padding,
+          right: this.x + this.width - padding,
+          top: this.y + padding,
+          bottom: this.y + this.height - padding
+        };
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 7. DATA CHIP COLLECTIBLES (Extra score bonus & neon visual)
+    // -------------------------------------------------------------
+    const collectibles = [];
+
+    class DataChip {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = 14;
+        this.collected = false;
+        this.rot = 0;
+      }
+
+      update(currentSpeed) {
+        this.x -= currentSpeed;
+        this.rot += 0.05;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
+        ctx.rotate(this.rot);
+
+        // Rotating Cyber Gem
+        ctx.fillStyle = '#ffaa00';
+        ctx.fillRect(-6, -6, 12, 12);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(-2, -2, 4, 4);
+
+        ctx.restore();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 8. COLLISION DETECTION (AABB - Axis-Aligned Bounding Box)
+    // -------------------------------------------------------------
+    function checkCollision(box1, box2) {
+      return (
+        box1.left < box2.right &&
+        box1.right > box2.left &&
+        box1.top < box2.bottom &&
+        box1.bottom > box2.top
+      );
+    }
+
+    // -------------------------------------------------------------
+    // 9. GAME LIFECYCLE & DIFFICULTY ENGINE
+    // -------------------------------------------------------------
+    function startGame() {
+      audio.init();
+      gameState = 'PLAYING';
+      score = 0;
+      distanceCount = 0;
+      speed = INITIAL_SPEED;
+      obstacles.length = 0;
+      collectibles.length = 0;
+      particles.length = 0;
+      obstacleTimer = 0;
+      nextObstacleDistance = 90;
+
+      player.reset();
+
+      startModal.classList.add('hidden');
+      gameOverModal.classList.add('hidden');
+      statusIndicator.textContent = 'RUNNING';
+      statusIndicator.style.color = '#00f3ff';
+    }
+
+    function triggerGameOver() {
+      gameState = 'GAMEOVER';
+      audio.playCrash();
+      createSparks(player.x + 25, player.y + 14, 30, '#ff007f');
+      createSparks(player.x + 25, player.y + 14, 20, '#00f3ff');
+
+      // Update High Score via localStorage
+      if (score > bestScore) {
+        bestScore = Math.floor(score);
+        localStorage.setItem('pixel_drift_best', bestScore);
+        bestScoreDisplay.textContent = padScore(bestScore);
+        document.getElementById('gameOverSubtitle').textContent = 'NEW SECTOR RECORD ACHIEVED!';
+      } else {
+        document.getElementById('gameOverSubtitle').textContent = 'VEHICLE COMPROMISED // DRIFT HALTED';
+      }
+
+      finalScoreDisplay.textContent = padScore(score);
+      finalBestDisplay.textContent = padScore(bestScore);
+      gameOverModal.classList.remove('hidden');
+
+      statusIndicator.textContent = 'OFFLINE';
+      statusIndicator.style.color = '#ff007f';
+    }
+
+    function handlePlayerAction() {
+      if (gameState === 'START') {
+        startGame();
+      } else if (gameState === 'PLAYING') {
+        player.jump();
+      } else if (gameState === 'GAMEOVER') {
+        startGame();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 10. RENDERING ENGINE & DRAWING
+    // -------------------------------------------------------------
+    function renderBackground() {
+      // Deep cyberpunk gradient sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      skyGrad.addColorStop(0, '#04000a');
+      skyGrad.addColorStop(0.5, '#120422');
+      skyGrad.addColorStop(1, '#25083a');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Distant Giant Cyberpunk Hologram Moon / Tyrell Pyramid Glow
+      const glowGrad = ctx.createRadialGradient(CANVAS_WIDTH * 0.75, 130, 10, CANVAS_WIDTH * 0.75, 130, 140);
+      glowGrad.addColorStop(0, 'rgba(176, 38, 255, 0.45)');
+      glowGrad.addColorStop(0.7, 'rgba(176, 38, 255, 0.08)');
+      glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(CANVAS_WIDTH * 0.75, 130, 140, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tyrell Corporation Hologram Crest in background
+      ctx.strokeStyle = 'rgba(0, 243, 255, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(CANVAS_WIDTH * 0.75, 130, 48, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Distant Parallax Skyscrapers
+      cityBuildings.forEach(b => {
+        // Move slowly with parallax
+        if (gameState === 'PLAYING') {
+          b.x -= speed * 0.12;
+          if (b.x + b.width < 0) {
+            b.x = CANVAS_WIDTH + Math.random() * 40;
+          }
+        }
+
+        // Draw Building Body
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, GROUND_Y - b.height, b.width, b.height);
+
+        // Windows / Grid light dots
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        for (let wy = GROUND_Y - b.height + 12; wy < GROUND_Y - 10; wy += 18) {
+          ctx.fillRect(b.x + 6, wy, 4, 3);
+          if (b.width > 35) ctx.fillRect(b.x + b.width - 12, wy, 4, 3);
+        }
+
+        // Neon Rooftop Advert Signs
+        if (b.hasSign) {
+          ctx.fillStyle = b.signColor;
+          ctx.font = '9px monospace';
+          ctx.fillText(b.signText, b.x + 4, GROUND_Y - b.height + 10);
+        }
+      });
+
+      // Perspective Retro Grid Ground
+      ctx.fillStyle = '#070112';
+      ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+
+      // Glowing Ground Horizon Line
+      ctx.strokeStyle = '#b026ff';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#b026ff';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y);
+      ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
+      ctx.stroke();
+      ctx.shadowBlur = 0; // reset
+
+      // Moving Ground Grid Lines
+      if (gameState === 'PLAYING') {
+        gridOffset = (gridOffset + speed) % 40;
+      }
+
+      ctx.strokeStyle = 'rgba(176, 38, 255, 0.35)';
+      ctx.lineWidth = 1;
+      // Vertical receding grid columns
+      for (let x = -gridOffset; x < CANVAS_WIDTH + 40; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.lineTo(x - 50, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+      // Horizontal depth lines
+      for (let y = GROUND_Y + 12; y < CANVAS_HEIGHT; y += 18) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      // Neon Rain Streaks (Blade Runner Drizzle)
+      rainDrops.forEach(r => {
+        if (gameState === 'PLAYING') {
+          r.x -= speed * 0.4;
+          r.y += r.speed;
+          if (r.y > CANVAS_HEIGHT) {
+            r.y = -20;
+            r.x = Math.random() * (CANVAS_WIDTH + 100);
+          }
+          if (r.x < 0) {
+            r.x = CANVAS_WIDTH + 20;
+          }
+        }
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 3, r.y + r.len);
+        ctx.stroke();
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 11. MAIN ENGINE LOOP
+    // -------------------------------------------------------------
+    function gameLoop() {
+      // 1. Draw Environment
+      renderBackground();
+
+      // 2. State Specific Updates
+      if (gameState === 'PLAYING') {
+        // Distance & Score Increment
+        score += 0.25;
+        distanceCount++;
+        scoreDisplay.textContent = padScore(score);
+
+        // Smooth Difficulty Scaling (Speed smoothly scales up)
+        speed = Math.min(MAX_SPEED, INITIAL_SPEED + (score * 0.007));
+        speedDisplay.textContent = `${Math.floor(220 + speed * 22)} KM/H`;
+
+        // Player Update & Hitbox Calculation
+        player.update();
+        const playerBounds = {
+          left: player.x + 8,
+          right: player.x + player.width - 6,
+          top: player.y + 6,
+          bottom: player.y + player.height - 2
+        };
+
+        // Obstacle Spawning Logic
+        obstacleTimer++;
+        if (obstacleTimer >= nextObstacleDistance) {
+          obstacleTimer = 0;
+          // Dynamically adjust gap based on speed so jumps are always fair
+          nextObstacleDistance = Math.floor(65 + Math.random() * 45 - (speed * 1.5));
+          if (nextObstacleDistance < 42) nextObstacleDistance = 42;
+
+          // Pick obstacle type: high speed introduces drones and pylons
+          const rand = Math.random();
+          let type = 'BARRIER';
+          if (rand > 0.65) {
+            type = 'DRONE';
+          } else if (rand > 0.35) {
+            type = 'SPIKE_PYLON';
+          }
+
+          obstacles.push(new Obstacle(type, CANVAS_WIDTH + 20));
+
+          // 25% chance to spawn an aerial bonus data chip near the obstacle
+          if (Math.random() < 0.25) {
+            collectibles.push(new DataChip(CANVAS_WIDTH + 80, GROUND_Y - 95));
+          }
+        }
+
+        // Update & Render Obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const obs = obstacles[i];
+          obs.update(speed);
+          obs.draw();
+
+          // AABB Collision Detection
+          if (checkCollision(playerBounds, obs.getBounds())) {
+            triggerGameOver();
+            break;
+          }
+
+          // Offscreen Cleanup
+          if (obs.x + obs.width < -30) {
+            obstacles.splice(i, 1);
+          }
+        }
+
+        // Update & Render Data Chips
+        for (let i = collectibles.length - 1; i >= 0; i--) {
+          const chip = collectibles[i];
+          chip.update(speed);
+          chip.draw();
+
+          // Collectible Hitbox Check
+          const chipBounds = {
+            left: chip.x,
+            right: chip.x + chip.size,
+            top: chip.y,
+            bottom: chip.y + chip.size
+          };
+
+          if (checkCollision(playerBounds, chipBounds)) {
+            audio.playScore();
+            score += 50; // Bonus points!
+            createSparks(chip.x, chip.y, 14, '#ffaa00');
+            collectibles.splice(i, 1);
+            continue;
+          }
+
+          if (chip.x < -20) {
+            collectibles.splice(i, 1);
+          }
+        }
+      } else {
+        // In START or GAMEOVER state, obstacles are stationary or retained
+        obstacles.forEach(o => o.draw());
+        collectibles.forEach(c => c.draw());
+      }
+
+      // Draw Player
+      player.draw();
+
+      // Update & Render Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+
+        const alpha = p.life / p.maxLife;
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        ctx.globalAlpha = 1.0;
+
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // Next Animation Frame
+      requestAnimationFrame(gameLoop);
+    }
+
+    // -------------------------------------------------------------
+    // 12. INPUT HANDLERS & EVENT LISTENERS
+    // -------------------------------------------------------------
+    // Keyboard Jump Controls
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        handlePlayerAction();
+      } else if (e.code === 'Enter' && gameState === 'GAMEOVER') {
+        e.preventDefault();
+        startGame();
+      }
+    });
+
+    // Screen Click / Tap jump
+    const screenContainer = document.getElementById('screenContainer');
+    screenContainer.addEventListener('pointerdown', (e) => {
+      // Ignore if clicking on interactive buttons directly
+      if (e.target.closest('button')) return;
+      handlePlayerAction();
+    });
+
+    // Touch Button
+    touchJumpBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handlePlayerAction();
+    });
+    touchJumpBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handlePlayerAction();
+    });
+
+    // Start & Restart UI Buttons
+    startBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startGame();
+    });
+
+    restartBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startGame();
+    });
+
+    // Audio SFX Toggle
+    soundToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      audio.init();
+      audio.enabled = !audio.enabled;
+      soundToggleBtn.textContent = audio.enabled ? '🔊 SFX ON' : '🔇 SFX OFF';
+      soundToggleBtn.style.borderColor = audio.enabled ? 'var(--neon-purple)' : '#555';
+    });
+
+    // Start engine loop
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
